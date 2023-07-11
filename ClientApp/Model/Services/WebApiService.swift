@@ -31,9 +31,7 @@ protocol WebApiServiceType {
     
     // MARK: - Orders
     func addOrders(order: OrderDTO, completion: @escaping (Result<Void, Error>) -> Void)
-    func cancelOrder(orderId: Int, completion: @escaping (Result<Void, Error>) -> Void)
     func checkTableAvailability(tableId: Int, completion: @escaping (Result<Bool, Error>) -> Void)
-    func getOrdersByStatus(statusId: Int, completion: @escaping (Result<[OrderDTO], Error>) -> Void)
     func getAllOrders(completion: @escaping (Result<[OrderDTO], Error>) -> Void)
     func getCompletedOrders(completion: @escaping (Result<[HistoryDTO], Error>) -> Void)
     func getCurrentOrders(completion: @escaping (Result<[HistoryDTO], Error>) -> Void)
@@ -45,6 +43,7 @@ protocol WebApiServiceType {
     func getPopularDishes(completion: @escaping (Result<[FullCategoryDTO], Error>) -> Void)
     func getDishDetails(id: Int, completion: @escaping (Result<DishDTO, Error>) -> Void)
     
+    func addOrder(with orderInfo: OrderDTO, completion: @escaping (Result<OrderDTO, Error>) -> Void)
 }
 
 class WebApiService: NSObject, WebApiServiceType {
@@ -220,7 +219,6 @@ class WebApiService: NSObject, WebApiServiceType {
         afSession.request(
             CommonConstants.Bonus.addOrSubstractBonuses(amount: amount),
             method: .post,
-            parameters: ["amount": amount],
             interceptor: authService
         )
         .validate()
@@ -236,9 +234,10 @@ class WebApiService: NSObject, WebApiServiceType {
             method: .get,
             interceptor: authService
         )
-       .responseDecodable(of: [BranchDTO].self, decoder: decoder) { [weak self] response in
-        self?.handleResponse(of: [BranchDTO].self, response: response, completion: completion)
-       }
+        .validate()
+        .responseDecodable(of: [BranchDTO].self, decoder: decoder) { response in
+            self.handleResponse(of: [BranchDTO].self, response: response, completion: completion)
+        }
     }
     
     // MARK: - Orders
@@ -247,19 +246,6 @@ class WebApiService: NSObject, WebApiServiceType {
             CommonConstants.Orders.addNewOrder(),
             method: .post,
             parameters: order,
-            interceptor: authService
-        )
-        .validate()
-        .responseDecodable { [weak self] response in
-            self?.handleEmptyResponse(response: response, completion: completion)
-        }
-    }
-    
-    func cancelOrder(orderId: Int, completion: @escaping (Result<Void, Error>) -> Void) {
-        afSession.request(
-            CommonConstants.Orders.cancelOrder(id: orderId),
-            method: .get,
-            parameters: nil,
             interceptor: authService
         )
         .validate()
@@ -278,19 +264,6 @@ class WebApiService: NSObject, WebApiServiceType {
         .validate()
         .responseDecodable { [weak self] response in
             self?.handleResponse(of: Bool.self, response: response, completion: completion)
-        }
-    }
-    
-    func getOrdersByStatus(statusId: Int, completion: @escaping (Result<[OrderDTO], Error>) -> Void) {
-        afSession.request(
-            CommonConstants.Orders.getOrderByStatus(id: statusId),
-            method: .get,
-            parameters: nil,
-            interceptor: authService
-        )
-        .validate()
-        .responseDecodable { [weak self] response in
-            self?.handleResponse(of: [OrderDTO].self, response: response, completion: completion)
         }
     }
     
@@ -364,7 +337,10 @@ class WebApiService: NSObject, WebApiServiceType {
             parameters: nil,
             interceptor: authService
         )
-        .responseDecodable(of: [DishDTO].self, decoder: decoder) { [weak self] response in
+        .responseDecodable(
+            of: [DishDTO].self,
+            decoder: decoder
+        ) { [weak self] response in
             self?.handleResponse(of: [DishDTO].self, response: response, completion: completion)
         }
     }
@@ -391,6 +367,20 @@ class WebApiService: NSObject, WebApiServiceType {
         .validate()
         .responseDecodable { [weak self] response in
             self?.handleResponse(of: DishDTO.self, response: response, completion: completion)
+        }
+    }
+    
+    func addOrder(with orderInfo: OrderDTO, completion: @escaping (Result<OrderDTO, Error>) -> Void) {
+        afSession.request(
+            CommonConstants.Orders.addNewOrder(),
+            method: .post,
+            parameters: orderInfo,
+            encoder: JSONParameterEncoder.default,
+            interceptor: authService
+        )
+        .validate()
+        .responseDecodable { [weak self] response in
+            self?.handleResponse(of: OrderDTO.self, response: response, completion: completion)
         }
     }
 }

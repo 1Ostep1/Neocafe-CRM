@@ -23,17 +23,23 @@ struct HistoryDTO: Codable {
     let totalPrice: Int
 }
 
-struct ListOrderDetailsDto: Codable {
-    let calcTotal: Int
-    let chosenGeneralAdditional: [GeneralAddition]
-    let id: Int
+struct ListOrderDetailsDto: Codable, Equatable, Hashable {
+    static func == (lhs: ListOrderDetailsDto, rhs: ListOrderDetailsDto) -> Bool {
+        lhs.stockId == rhs.stockId && lhs.name == rhs.name
+    }
+    
+    let stockId: Int
+    let urlImage: String?
+    let generalAdditionalId: [GeneralAddition]?
     let name: String
     let price: Int
-    let quantity: Int
+    var quantity: Int
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(stockId)
+    }
 }
 
 struct GeneralAddition: Codable {
     let generalAdditionalId: Int
-    let generalAdditionalName: String
 }
-

@@ -9,7 +9,6 @@ import UIKit
 import XLPagerTabStrip
 
 class CategoryPageMenuController: ButtonBarPagerTabStripViewController {
-    
     private lazy var buttonBar: ButtonBarView = {
         let layout = UICollectionViewFlowLayout()
         let button = ButtonBarView(frame: .zero, collectionViewLayout: layout)
@@ -24,6 +23,8 @@ class CategoryPageMenuController: ButtonBarPagerTabStripViewController {
         view.backgroundColor = Asset.clientBackround.color
         return view
     }()
+    
+    var isFirstTime = true
     
     override func viewDidLoad() {
         view.addSubview(buttonBar)
@@ -45,7 +46,10 @@ class CategoryPageMenuController: ButtonBarPagerTabStripViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        moveToViewController(at: categoryIndex - 1, animated: true)
+        if isFirstTime {
+            isFirstTime = false
+            moveToViewController(at: categoryIndex - 1, animated: true)
+        }
     }
     
     var categoryIndex = 0
@@ -65,16 +69,16 @@ class CategoryPageMenuController: ButtonBarPagerTabStripViewController {
     }
     
     override func viewControllers(for pagerTabStripController: PagerTabStripViewController) -> [UIViewController] {
-        let teaController = DIService.shared.getVc(CategoryViewController.self)
-        teaController.categoryIndex = 1
-        let сoffeeController = DIService.shared.getVc(CategoryViewController.self)
-        сoffeeController.categoryIndex = 2
-        let bakeryController = DIService.shared.getVc(CategoryViewController.self)
-        bakeryController.categoryIndex = 3
-        let desertsController = DIService.shared.getVc(CategoryViewController.self)
-        desertsController.categoryIndex = 4
-        let cocktailsController = DIService.shared.getVc(CategoryViewController.self)
-        cocktailsController.categoryIndex = 5
-        return [teaController, сoffeeController, bakeryController, desertsController, cocktailsController]
+        let desertsController = InjectionService.resolve(controller: CategoryViewController.self)
+        desertsController.categoryIndex = 1
+        let сoffeeController = InjectionService.resolve(controller: CategoryViewController.self)
+        сoffeeController.categoryIndex = 3
+        let teaController = InjectionService.resolve(controller: CategoryViewController.self)
+        teaController.categoryIndex = 2
+        let cocktailsController = InjectionService.resolve(controller: CategoryViewController.self)
+        cocktailsController.categoryIndex = 4
+        let bakeryController = InjectionService.resolve(controller: CategoryViewController.self)
+        bakeryController.categoryIndex = 5
+        return [desertsController, сoffeeController, teaController, cocktailsController, bakeryController]
     }
 }

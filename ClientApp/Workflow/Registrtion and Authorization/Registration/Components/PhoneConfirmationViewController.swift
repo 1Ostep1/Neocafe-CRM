@@ -92,6 +92,17 @@ class PhoneConfirmationViewController: BaseRegistrationViewController {
         button.addTarget(self, action: #selector(getCodeTapped(_:)), for: .touchUpInside)
         return button
     }()
+    private lazy var activity: UIActivityIndicatorView = {
+        let view = UIActivityIndicatorView()
+        view.hidesWhenStopped = true
+        return view
+    }()
+    
+    private var isLoading: Bool = false {
+        didSet {
+            _ = isLoading ? activity.startAnimating() : activity.stopAnimating()
+        }
+    }
     
     private var countryCode = "+996"
     private var confirmationCode = ""
@@ -130,6 +141,7 @@ class PhoneConfirmationViewController: BaseRegistrationViewController {
         view.addSubview(horizontalStack)
         view.addSubview(logInButton)
         view.addSubview(resendButton)
+        logInButton.addSubview(activity)
     }
     
     private func setUpConstaints () {
@@ -155,6 +167,10 @@ class PhoneConfirmationViewController: BaseRegistrationViewController {
             make.trailing.equalToSuperview().inset(16)
             make.top.equalTo(logInButton.snp.bottom).offset(16)
             make.height.equalTo(60)
+        }
+        activity.snp.makeConstraints { make in
+            make.width.height.equalTo(25)
+            make.center.equalToSuperview()
         }
     }
     
@@ -182,11 +198,11 @@ class PhoneConfirmationViewController: BaseRegistrationViewController {
             let confirmationCodeCompletion = { [unowned self] completion in
                 self.viewModel.sendConfirmation(for: fullPhone, confirmationCode: self.confirmationCode, completion: completion)
             }
-            logInButton.isLoading = true
-            defer { logInButton.isLoading = false }
+            isLoading = true
             withRetry(confirmationCodeCompletion) { [weak self] res in
+                self?.logInButton.isLoading = false 
                 if case .success = res {
-                    let birthdayVC = DIService.shared.getVc(BirthdayViewController.self)
+                    let birthdayVC = InjectionService.resolve(controller: BirthdayViewController.self)
                     self?.navigationController?.pushViewController(birthdayVC, animated: true)
                 }
             }

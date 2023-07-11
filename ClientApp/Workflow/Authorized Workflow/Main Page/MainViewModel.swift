@@ -8,25 +8,18 @@
 import Foundation
 
 protocol MainViewModelType {
-    var dishesInBasket: [OrderDTO] { get set }
-    
     func getPopularDishes(completion: @escaping (Result<[FullCategoryDTO], Error>) -> Void)
     func getCategoriesDish(completion: @escaping (Result<[CategoryDTO], Error>) -> Void)
     func getBonuses(completion: @escaping(Result<Int, Error>) -> Void)
     func getDishesByCategory(categoryId: Int, completion: @escaping(Result<[DishDTO], Error>) -> Void)
+    func addNewDish(_ dish: ListOrderDetailsDto)
 }
 
 class MainViewModel: MainViewModelType {
     var webApi: WebApiServiceType
     var basketManager: BasketManagerType
     
-    var dishesInBasket: [OrderDTO] = [] {
-        didSet {
-            basketManager.dishes = dishesInBasket
-        }
-    }
-    
-    init(webApi: WebApiServiceType, basketManager: BasketManagerType ) {
+    init(webApi: WebApiServiceType, basketManager: BasketManagerType) {
         self.webApi = webApi
         self.basketManager = basketManager
     }
@@ -45,5 +38,9 @@ class MainViewModel: MainViewModelType {
     
     func getDishesByCategory(categoryId: Int, completion: @escaping(Result<[DishDTO], Error>) -> Void) {
         webApi.getDishesBy(categoryId: categoryId, completion: completion)
+    }
+    
+    func addNewDish(_ dish: ListOrderDetailsDto) {
+        basketManager.addNewDish(dish)
     }
 }

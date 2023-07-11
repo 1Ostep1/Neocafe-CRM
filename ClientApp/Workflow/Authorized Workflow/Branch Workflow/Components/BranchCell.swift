@@ -14,9 +14,11 @@ protocol BranchCellDelegate: AnyObject {
 class BranchCell: UICollectionViewCell {
     private lazy var branchImageView: UIImageView = {
         let view = UIImageView()
-        view.backgroundColor = .black
         view.layer.cornerRadius = 10
+        view.backgroundColor = .brown
         view.layer.masksToBounds = true
+        view.isUserInteractionEnabled = true
+        view.image = Asset.branch.image
         return view
     }()
     
@@ -52,11 +54,11 @@ class BranchCell: UICollectionViewCell {
         return label
     }()
     
-    private lazy var resendTo2Gis: UIButton = {
+    private lazy var resendTo: UIButton = {
         let button = UIButton()
         button.setImage(Asset.paperPlaneTilt.image, for: .normal)
         button.tintColor = .white
-        button.addTarget(self, action: #selector(resendTapped), for: .touchUpInside)
+        button.isUserInteractionEnabled = true
         return button
     }()
     
@@ -79,14 +81,20 @@ class BranchCell: UICollectionViewCell {
     // MARK: - Properties
     weak var delegate: BranchCellDelegate?
     
-    override func layoutSubviews() {
-        super.layoutSubviews()
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setUp()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
         setUp()
     }
     
     private func setUp() {
         setUpSubviews()
         setUpConstaints()
+        resendTo.addTarget(self, action: #selector(resendTapped), for: .touchUpInside)
     }
     
     private func setUpSubviews() {
@@ -97,9 +105,9 @@ class BranchCell: UICollectionViewCell {
         branchImageView.addSubview(phoneImage)
         branchImageView.addSubview(adressImage)
         branchImageView.addSubview(adressLabel)
-        addSubview(resendTo2Gis)
+        branchImageView.addSubview(resendTo)
         branchImageView.addSubview(adressLabel)
-
+        branchImageView.bringSubviewToFront(resendTo)
     }
     
     private func setUpConstaints () {
@@ -143,9 +151,9 @@ class BranchCell: UICollectionViewCell {
             make.bottom.equalToSuperview().offset(-16)
             make.height.width.equalTo(15)
         }
-        resendTo2Gis.snp.makeConstraints { make in
+        resendTo.snp.makeConstraints { make in
             make.top.equalToSuperview().offset(16)
-            make.trailing.equalToSuperview().offset(-32)
+            make.trailing.equalToSuperview().offset(-16)
             make.height.width.equalTo(35)
         }
     }
@@ -155,10 +163,13 @@ class BranchCell: UICollectionViewCell {
         branchLabel.text = branch.name
         phoneLabel.text = branch.phoneNumber
         adressLabel.text = branch.address
+        if branch.link2gis == nil {
+            resendTo.isHidden = true
+        }
     }
     
     @objc
-    private func resendTapped(with link: String) {
+    private func resendTapped() {
         guard let branch = branch else { return }
         delegate?.resendTo2Gis(with: branch)
     }

@@ -21,5 +21,9 @@ class RegistrationAssembly: Assembly {
         container.register(BirthdayViewController.self) { r in
             BirthdayViewController(vm: r~>)
         }.inObjectScope(.container)
+        
+        container.register(PhoneConfirmationViewController.self) { r in
+            PhoneConfirmationViewController(vm: r~>)
+        }.inObjectScope(.container)
     }
 }

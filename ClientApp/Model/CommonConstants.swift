@@ -83,23 +83,7 @@ enum CommonConstants {
         }
         
         static func addNewOrder() -> URL {
-            baseUrl.appendingPathComponent("/Orders/add")
-        }
-        
-        static func cancelOrder(id: Int) -> URL {
-            baseUrl.appendingPathComponent("/Orders/change-status-cancel/\(id)")
-        }
-        
-        static func closeOrder(id: Int) -> URL {
-            baseUrl.appendingPathComponent("/Orders/change-status-close/\(id)")
-        }
-        
-        static func getOrderByStatus(id: Int) -> URL {
-            baseUrl.appendingPathComponent("/Orders/get-all-orders-byCurrentUserAndStatus/\(id)")
-        }
-        
-        static func changeOrderStatus(id: Int) -> URL {
-            baseUrl.appendingPathComponent("/Orders/change-status-in-progress/\(id)")
+            baseUrl.appendingPathComponent("/client/orders/add")
         }
         
         static func getAllOrders() -> URL {
@@ -130,11 +114,11 @@ enum CommonConstants {
     // MARK: - Bonuses
     enum Bonus {
         static func getBonuses() -> URL {
-            baseUrl.appendingPathComponent("/bonuses/get-amount")
+            baseUrl.appendingPathComponent("/client/bonuses/get-amount")
         }
         
         static func addOrSubstractBonuses(amount: Int) -> URL {
-            baseUrl.appendingPathComponent("/bonuses/subtract/\(amount)")
+            baseUrl.appendingPathComponent("/client/bonuses/subtract/\(amount)")
         }
     }
     

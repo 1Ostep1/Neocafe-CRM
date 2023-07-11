@@ -125,15 +125,6 @@ class ProfileViewController: BaseViewController {
         }
     }
     
-    private func addSubstractBonuses(amount: Int) {
-        viewModel.addSubstractBonuses(amount: 10) { [weak self] res in
-            if case .success(let bonus) = res {
-                self?.bonus = bonus
-                self?.getBonuses()
-            }
-        }
-    }
-    
     private func getCurrentOrders() {
         withRetry(viewModel.getCurrentOrders) { [weak self] res in
             if case .success(let items) = res {
@@ -159,7 +150,7 @@ class ProfileViewController: BaseViewController {
     
     @objc
     private func editProfileTapped() {
-        let profileEditVC = DIService.shared.getVc(ProfileViewController.self)
+        let profileEditVC = InjectionService.resolve(controller: ProfileEditViewController.self)
         navigationController?.pushViewController(profileEditVC, animated: true)
     }
     
@@ -225,7 +216,7 @@ extension ProfileViewController: UICollectionViewDelegateFlowLayout, UICollectio
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        addSubstractBonuses(amount: 10)
+        
     }
 }
 

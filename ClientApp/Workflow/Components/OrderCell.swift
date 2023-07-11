@@ -8,9 +8,10 @@
 import UIKit
 
 class OrderCell: UICollectionViewCell {
-    
     private lazy var orderImageView: UIImageView = {
         let view = UIImageView()
+        view.layer.masksToBounds = true
+        view.layer.cornerRadius = 16
         view.image = Asset.calendar.image
         return view
     }()
@@ -19,7 +20,6 @@ class OrderCell: UICollectionViewCell {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         label.textColor = .black
-        label.text = "Capucino (190c/шт)"
         return label
     }()
     
@@ -43,8 +43,8 @@ class OrderCell: UICollectionViewCell {
         let button = UIButton()
         button.setTitle("-", for: .normal)
         button.layer.cornerRadius = 14
-        button.setTitleColor(.black, for: .normal)
-        button.backgroundColor = Asset.clientGray.color
+        button.setTitleColor(.white, for: .normal)
+        button.backgroundColor = Asset.clientMain.color
         button.tag = 0
         button.addTarget(self, action: #selector(addSubstractItemTapped(_:)), for: .touchUpInside)
         return button
@@ -82,13 +82,19 @@ class OrderCell: UICollectionViewCell {
     
     private var count = 0 {
         didSet {
-            sumLabel.text = "\(count * 190)с"
+            sumLabel.text = "\(count * Int(orderInfo?.price ?? 0))с"
             countLabel.text = "\(count)"
-            orderCount?(count * 190)
+            guard var order = orderInfo else {
+                return
+            }
+            order.quantity = count
+            orderCount?(order)
         }
     }
     
-    public var orderCount: ((Int) -> Void)?
+    private var orderInfo: ListOrderDetailsDto?
+    
+    public var orderCount: ((ListOrderDetailsDto) -> Void)?
     
     override func layoutSubviews() {
         super.layoutSubviews()
@@ -111,7 +117,7 @@ class OrderCell: UICollectionViewCell {
     
     private func setUpConstaints () {
         orderImageView.snp.makeConstraints { make in
-            make.top.leading.bottom.equalToSuperview()
+            make.top.leading.bottom.equalToSuperview().offset(8)
             make.width.equalTo(89)
         }
         orderLabel.snp.makeConstraints { make in
@@ -140,21 +146,40 @@ class OrderCell: UICollectionViewCell {
         }
     }
     
-    func display(dish: OrderDTO) {
-//        orderLabel.text = dish
+    func display(dish: ListOrderDetailsDto) {
+        orderInfo = dish
+        orderLabel.text = dish.name
+        orderImageView.sd_setImage(with: dish.urlImage?.url)
+        orderDescriptionLabel.text = dish.name
+        sumLabel.text = "\(Int(dish.price) * (dish.quantity))"
+        countLabel.text = "\(dish.quantity)"
+    }
+    
+    private func handleCounter() {
+        guard let order = orderInfo else {
+            return
+        }
+        sumLabel.text = "\(order.quantity * Int(order.price))с"
+        countLabel.text = "\(order.quantity)"
     }
     
     @objc
     private func addSubstractItemTapped(_ sender: UIButton) {
+        guard var order = orderInfo else {
+            return
+        }
         switch sender.tag {
         case 0:
-            if count > 0 {
-                count -= 1
+            if order.quantity > 0 {
+                order.quantity -= 1
             }
         case 1:
-            count += 1
+            order.quantity += 1
         default:
             fatalError()
         }
+        orderInfo = order
+        orderCount?(order)
+        handleCounter()
     }
 }

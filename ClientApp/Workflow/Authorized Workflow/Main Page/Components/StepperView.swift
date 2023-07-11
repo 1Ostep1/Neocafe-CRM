@@ -30,6 +30,7 @@ class StepperView: UIControl {
         didSet {
             delegate?.updateValue(with: quantityOfItems)
             quantityOfItemsLabel.text = "\(quantityOfItems) \(quantityOfItemsUnityOfMeasure)"
+            layoutSubviews()
         }
     }
     

@@ -9,8 +9,7 @@ import Foundation
 
 struct OrderDTO: Codable {
     let branchId: Int
-    let listOrderDetailsDto: [ListOrderDetails]?
-    let orderTime: Date
+    let listOrderDetailsDto: [ListOrderDetailsDto]?
     let orderType: String
     let tableId: Int
 }

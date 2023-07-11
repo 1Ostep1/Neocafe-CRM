@@ -34,27 +34,29 @@ class BasketViewController: BaseViewController {
         let layout = UICollectionViewFlowLayout()
         layout.itemSize = CGSize(width: screenWidth, height: 90)
         layout.minimumLineSpacing = 10
-        layout.headerReferenceSize = CGSize(width: screenWidth, height: 130)
-        layout.footerReferenceSize = CGSize(width: screenWidth, height: 240)
+        layout.footerReferenceSize = CGSize(width: screenWidth, height: 300)
         let view = UICollectionView(frame: .zero, collectionViewLayout: layout)
         view.delegate = self
         view.dataSource = self
         view.registerReusable(CellType: OrderCell.self)
-        view.registerReusableView(ViewType: BasketHeaderView.self, type: .UICollectionElementKindSectionHeader)
-        view.registerReusableView(ViewType: BasketFooterView.self, type: .UICollectionElementKindSectionFooter)
+        view.registerReusableView(ViewType: OrderButtonsView.self, type: .UICollectionElementKindSectionFooter)
         view.backgroundColor = Asset.clientBackround.color
         return view
     }()
     
-    private let emptyView: UIImageView = {
-        let view = UIImageView()
-        let image = Asset.animal.image
-        view.image = image
+    private let emptyView: EmptyView = {
+        let view = EmptyView()
         return view
     }()
     
-    private var sum = 0
+    private var bonusTextField = UITextField()
     
+    private var sum = 0
+    private var dishesInBasket: [ListOrderDetailsDto] = [] {
+        didSet {
+            collectionView.reloadData()
+        }
+    }
     // MARK: - injection
     private var viewModel: BasketViewModelType
     
@@ -71,24 +73,34 @@ class BasketViewController: BaseViewController {
         super.viewDidLoad()
         setUp()
     }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        getBonuses()
+        Task {
+            let dishesInBasket = try! await viewModel.getDishes()
+            self.dishesInBasket = dishesInBasket
+            emptyView.isHidden = !dishesInBasket.isEmpty
+            collectionView.isHidden = dishesInBasket.isEmpty
+        }
+        
         collectionView.reloadData()
     }
     
     private func setUp() {
         setUpSubviews()
         setUpConstaints()
+        emptyView.menuTapped = handleMenuTap
     }
     
     private func setUpSubviews() {
         view.addSubview(titleLabel)
         view.addSubview(historyOfOrdersButton)
         view.addSubview(collectionView)
+        view.addSubview(emptyView)
     }
     
-    private func setUpConstaints () {
+    private func setUpConstaints() {
         titleLabel.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide).offset(5)
             make.leading.equalToSuperview().offset(16)
@@ -105,45 +117,88 @@ class BasketViewController: BaseViewController {
             make.top.equalTo(titleLabel.snp.bottom).offset(5)
             make.bottom.trailing.leading.equalToSuperview()
         }
+        emptyView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+        }
     }
+    
+    private func addSubstractBonuses(amount: Int) {
+        viewModel.addSubstractBonuses(amount: amount) { [weak self] res in
+            if case .success(let bonus) = res {
+                self?.viewModel.bonuses = bonus
+                self?.getBonuses()
+            }
+        }
+    }
+    
+    private func observeNotification() {
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadBasketView), name: .init("com.ostep.addedToBasket"), object: nil)
+    }
+    
     // MARK: - OBJC functions
     @objc
+    private func reloadBasketView() {
+        collectionView.reloadData()
+    }
+    
+    @objc
     private func historyTapped() {
-        let historyVC = DIService.shared.getVc(HistoryOrderViewController.self)
+        let historyVC = InjectionService.resolve(controller: HistoryOrderViewController.self)
         navigationController?.pushViewController(historyVC, animated: true)
     }
     
+    private func handleMenuTap() {
+        tabBarController?.selectedIndex = 0
+    }
+    
     private func orderInfo(sum: Int) {
-        self.sum = sum
+        viewModel.setSum(sum)
+    }
+    
+    private func getBonuses() {
+        viewModel.getBonuses { [weak self] res in
+            if case .success(let bonus) = res {
+                self?.viewModel.bonuses = bonus
+            }
+        }
+    }
+    // MARK: - Handlers
+    private func handleOrder() {
+        let dishes = dishesInBasket
+        let orderType = viewModel.getOrderType()
+        let order = OrderDTO(
+            branchId: 0,
+            listOrderDetailsDto: dishes,
+            orderType: orderType.rawValue,
+            tableId: 0
+        )
+        
+        viewModel.addOrder(with: order) { _ in
+            print("feawsfa")
+        }
     }
 }
 
 // MARK: - Datasource Delegate
 extension BasketViewController: UICollectionViewDelegateFlowLayout, UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return viewModel.dishes.count
+        return dishesInBasket.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueIdentifiableCell(OrderCell.self, for: indexPath)
-        cell.orderCount = orderInfo
-        
+        cell.display(dish: dishesInBasket[indexPath.row])
+        cell.orderCount = { [weak self] order in
+            FirestoreManager.shared.saveTo(collection: .basket, id: order.stockId, data: order)
+        }
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
-        switch kind {
-        case UICollectionView.elementKindSectionHeader:
-            let view = collectionView.dequeuReusableView(ViewType: BasketHeaderView.self, type: .UICollectionElementKindSectionHeader, for: indexPath)
-            return view
-        case UICollectionView.elementKindSectionFooter:
-            let view = collectionView.dequeuReusableView(ViewType: BasketFooterView.self, type: .UICollectionElementKindSectionFooter, for: indexPath)
-            view.delegate = self
-            return view
-        default:
-            let view = collectionView.dequeuReusableView(ViewType: BasketFooterView.self, type: .UICollectionElementKindSectionFooter, for: indexPath)
-            return view
-        }
+        let view = collectionView.dequeuReusableView(ViewType: OrderButtonsView.self, type: .UICollectionElementKindSectionFooter, for: indexPath)
+        view.delegate = self
+        view.display(item: viewModel.getSum())
+        return view
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
@@ -151,13 +206,43 @@ extension BasketViewController: UICollectionViewDelegateFlowLayout, UICollection
     }
 }
 
-extension BasketViewController: BasketFooterViewDelegate {
+extension BasketViewController: OrderButtonsViewDelegate {
     func addMoreTap() {
-        let tabbar = BaseTabViewController()
-        tabbar.selectedIndex = 1
+        tabBarController?.selectedIndex = 0
     }
     
     func orderTap() {
-        print("tap")
+        showBonusAlert()
+        print("Order tapp")
+    }
+    
+    func orderTypeTap(type: OrderButtonsView.OrderType) {
+        viewModel.setOrderType(type)
+    }
+    
+    private func showBonusAlert() {
+        let alert = UIAlertController(
+            title: "Cписание бонусов",
+            message: "У вас есть \(viewModel.bonuses) бонусов, хотите использовать их?",
+            preferredStyle: .alert)
+        
+        alert.addTextField(configurationHandler: configurationTextField)
+        alert.addAction(UIAlertAction(title: "Списать", style: .default) { [weak self] action in
+            guard
+                let self,
+                let bonus = Int(self.bonusTextField.text ?? "0"),
+                bonus <= self.viewModel.bonuses else {
+                return
+            }
+            self.handleOrder()
+            self.addSubstractBonuses(amount: bonus)
+        })
+        alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    private func configurationTextField(textField: UITextField) {
+        self.bonusTextField = textField
+        textField.keyboardType = .numberPad
     }
 }

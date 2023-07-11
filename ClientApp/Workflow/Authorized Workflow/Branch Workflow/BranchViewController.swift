@@ -25,12 +25,21 @@ class BranchViewController: BaseViewController {
         view.dataSource = self
         view.registerReusable(CellType: BranchCell.self)
         view.backgroundColor = Asset.clientBackround.color
+        view.refreshControl = refreshControl
         return view
+    }()
+    
+    private lazy var refreshControl: UIRefreshControl = {
+        let control = UIRefreshControl()
+        control.addTarget(self, action: #selector(loadDetails), for: .touchUpInside)
+        return control
     }()
     
     private var branches: [BranchDTO] = [] {
         didSet {
-            collectionView.reloadData()
+            DispatchQueue.main.async {            
+                self.collectionView.reloadData()
+            }
         }
     }
     
@@ -49,6 +58,7 @@ class BranchViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setUp()
+        loadDetails()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -79,6 +89,7 @@ class BranchViewController: BaseViewController {
         }
     }
     
+    @objc
     private func loadDetails() {
         withRetry(viewModel.getBranches) { [weak self] res in
             if case .success(let result) = res {
@@ -87,11 +98,13 @@ class BranchViewController: BaseViewController {
         }
     }
     
-    private func resendTapped(with data: BranchDTO) {
-        let coordinate = CLLocationCoordinate2DMake(data.latitude ?? 0.0, data.longitude ?? 0.0)
-        let mapItem = MKMapItem(placemark: MKPlacemark(coordinate: coordinate, addressDictionary: nil))
-        mapItem.name = "Target location"
-        mapItem.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
+    private func resendTapped(with link: String?) {
+        guard
+            let urlString = link,
+            let url = URL(string: urlString) else {
+            return
+        }
+        UIApplication.shared.open(url)
     }
 }
 
@@ -119,7 +132,7 @@ extension BranchViewController: BranchCellDelegate {
                                       message: "Вы сможете быстро сориентироваться и найти быстрый маршрут к нам! Ждем вас!",
                                       preferredStyle: .alert)
         let resendAction = UIAlertAction(title: "Перейти", style: .default) { [weak self] _ in
-            self?.resendTapped(with: data)
+            self?.resendTapped(with: data.link2gis)
         }
         alert.addAction(resendAction)
         alert.addAction(UIAlertAction(title: "Остаться", style: .cancel))

@@ -175,8 +175,9 @@ class ProfileEditViewController: BaseViewController {
     
     private func editProfile() {
         guard let birthDay = bDayDate,
-              let name = nameTextField.text
-        else { return }
+              let name = nameTextField.text else {
+            return
+        }
         isLoading = true
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -191,7 +192,6 @@ class ProfileEditViewController: BaseViewController {
         withRetry(editProfileCompletion) { [weak self] res in
             if case .success() = res {
                 self?.isLoading = false
-                self?.changesSucceeded()
                 self?.getUserInfo()
             } else if case .failure(let err) = res {
                 print(err.localizedDescription)
@@ -203,22 +203,12 @@ class ProfileEditViewController: BaseViewController {
         let inputFormatter = DateFormatter()
         inputFormatter.dateFormat = "MM/dd/yyyy"
         let resultString = inputFormatter.string(from: user.bdate.toDate())
-
+        
         nameTextField.text = user.name
         birthdayTextField.text = resultString
+        bDayDate = user.bdate.toDate()
         phoneTextField.text = user.phoneNumber.replacingOccurrences(of: "+996", with: "")
-    }
-    
-    private func changesSucceeded() {
-        let alert = UIAlertController(
-            title: "Изменения сохранены",
-            message: "Хотите покинуть страницу редактирования?",
-            preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Дa", style: .default, handler: { [weak self] _ in
-            self?.navigationController?.popViewController(animated: true)
-        }))
-        alert.addAction(UIAlertAction(title: "Нет", style: .cancel))
-        present(alert, animated: true)
+        navigationController?.popViewController(animated: true)
     }
     
     private func suggestChanges() {
@@ -226,9 +216,9 @@ class ProfileEditViewController: BaseViewController {
             title: "Изменения не сохранены",
             message: "Хотите покинуть страницу редактирования?",
             preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Да", style: .default, handler: { [weak self] action in
+        alert.addAction(UIAlertAction(title: "Да", style: .default) { [weak self] action in
             self?.editProfile()
-        }))
+        })
         alert.addAction(UIAlertAction(title: "Нет", style: .cancel))
         present(alert, animated: true)
     }

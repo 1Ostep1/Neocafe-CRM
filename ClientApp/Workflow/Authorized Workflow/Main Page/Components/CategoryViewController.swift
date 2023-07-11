@@ -15,15 +15,17 @@ class CategoryViewController: BaseViewController {
         case deserts = "Десерты"
         case bakery = "Выпечка"
         case cocktails = "Коктейли"
-        case tea = "Чай"
+        case tea = "Чаи"
     }
     
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         let coll = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        coll.showsHorizontalScrollIndicator = false
+        coll.showsVerticalScrollIndicator = false
         coll.delegate = self
         coll.dataSource = self
-        coll.backgroundColor =  Asset.clientBackround.color
+        coll.backgroundColor = Asset.clientBackround.color
         coll.registerReusableView(ViewType: HeaderView.self, type: .UICollectionElementKindSectionHeader)
         coll.registerReusable(CellType: PopularItemCell.self)
         coll.registerReusableView(ViewType: FooterView.self, type: .UICollectionElementKindSectionFooter)
@@ -31,8 +33,24 @@ class CategoryViewController: BaseViewController {
     }()
     // MARK: - Injection
     private var viewModel: MainViewModelType!
-
+    
     private var dishes: [DishDTO] = [] {
+        didSet {
+            products = dishes.map { items in
+                let generalAdditionalIds = items.generalAdditionals?.map { GeneralAddition(generalAdditionalId: $0.id) }
+                return ListOrderDetailsDto(
+                    stockId: items.dishId,
+                    urlImage: items.dishUrl,
+                    generalAdditionalId: generalAdditionalIds,
+                    name: items.dishName,
+                    price: Int(items.dishPrice),
+                    quantity: 0
+                )
+            }
+        }
+    }
+    
+    private var products: [ListOrderDetailsDto] = [] {
         didSet {
             collectionView.reloadData()
         }
@@ -47,18 +65,18 @@ class CategoryViewController: BaseViewController {
     var categoryIndex = 1 {
         didSet {
             switch categoryIndex {
+            case 1:
+                categoryType = .deserts
             case 2:
+                categoryType = .tea
+            case 3:
                 categoryType = .coffee
             case 4:
-                categoryType = .deserts
-            case 5:
                 categoryType = .cocktails
-            case 3:
+            case 5:
                 categoryType = .bakery
-            case 1:
-                categoryType = .tea
             default:
-                categoryType = .coffee
+                categoryType = .deserts
             }
         }
     }
@@ -76,16 +94,7 @@ class CategoryViewController: BaseViewController {
         super.viewDidLoad()
         getDishesByCategory(categoryId: categoryIndex)
         setUp()
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        navigationController?.title = "Меню"
-    }
-    
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        
+        addObserver()
     }
     
     private func setUp() {
@@ -103,6 +112,22 @@ class CategoryViewController: BaseViewController {
             make.trailing.equalToSuperview().offset(-16)
             make.leading.equalToSuperview().offset(16)
             make.bottom.equalTo(view.safeAreaLayoutGuide).offset(-16)
+        }
+    }
+    
+    private func addObserver() {
+        NotificationCenter.default.addObserver(self, selector: #selector(getProducts), name: .init("com.ostep.ClientApp.saved"), object: nil)
+    }
+    
+    @objc
+    private func getProducts() {
+        Task {
+            do {
+                let products: [ListOrderDetailsDto] = try await FirestoreManager.shared.fetchAllData(from: .basket)
+                self.products = products
+            } catch {
+                print("Error: \(error.localizedDescription)")
+            }
         }
     }
     
@@ -128,20 +153,20 @@ extension CategoryViewController: IndicatorInfoProvider {
         case .cocktails:
             return IndicatorInfo(title: "Коктейли")
         case .tea:
-            return IndicatorInfo(title: "Чай")
+            return IndicatorInfo(title: "Чаи")
         }
     }
 }
 
 extension CategoryViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
-    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         dishes.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueIdentifiableCell(PopularItemCell.self, for: indexPath)
-        cell.display(cell: dishes[indexPath.row])
+        let item = products[indexPath.row]
+        cell.display(cell: item)
         cell.delegate = self
         return cell
     }
@@ -174,21 +199,21 @@ extension CategoryViewController: UICollectionViewDataSource, UICollectionViewDe
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let controller = DIService.shared.getVc(DetailsDishViewController.self)
+        let controller = InjectionService.resolve(controller: DetailsDishViewController.self)
+        controller.selectedDish = dishes[indexPath.row]
         navigationController?.pushViewController(controller, animated: true)
     }
 }
 
 extension CategoryViewController: PopularItemDelegate {
-    func updateItems(with items: OrderDTO) {
-        viewModel.dishesInBasket.append(items)
+    func updateItems(with items: ListOrderDetailsDto) {
+        FirestoreManager.shared.saveTo(collection: .basket, id: items.stockId, data: items)
     }
 }
 
 // MARK: - HeaderView
 extension CategoryViewController {
-    class HeaderView: UICollectionReusableView {
-        
+    class HeaderView: UICollectionReusableView { 
         private lazy var headerTitle: UILabel = {
             let label = UILabel()
             label.font = UIFont.systemFont(ofSize: 28, weight: .semibold)

@@ -7,27 +7,55 @@
 
 import Foundation
 
-struct FullCategoryDTO: Codable, Hashable {
-    
+struct FullCategoryDTO: Codable, Hashable, Equatable {
     private enum CodingKeys : String, CodingKey {
-        case category, description, id, imagesUrl, name, price, status
+        case category, description, id, imagesUrl, name, price, status, counter
     }
     
     let category: CategoryDTO
-    let description: String
+    var description: String
+    let counter: Int
     let id: Int
-    let imagesUrl: URL?
+    let imagesUrl: String?
     let name: String
-    let price: Int
+    let price: Double
     let status: String
+    
+    static func ==(lhs: FullCategoryDTO, rhs: FullCategoryDTO) -> Bool{
+        return lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 }
 
-struct CategoryDTO: Codable, Hashable {
+extension FullCategoryDTO: OrderType {
+    var dishId: Int { id }
+    var dishPrice: Double { price }
+    var sum: Double? { Double(counter * Int(price)) }
+    var dishName: String { name }
+    var dishUrl: String? { imagesUrl }
+    var count: Int {
+        get { counter }
+        set { _ = counter }
+    }
+}
+
+struct CategoryDTO: Codable, Hashable, Equatable {
     private enum CodingKeys : String, CodingKey { case id, name, status }
     
     let id: Int
     let name: String
     let status: String
+    
+    static func ==(lhs: CategoryDTO, rhs: CategoryDTO) -> Bool{
+        return lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 }
 
 struct CategoryMenuDTO: Codable {

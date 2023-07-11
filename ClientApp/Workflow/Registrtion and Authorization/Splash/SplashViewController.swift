@@ -65,25 +65,26 @@ class SplashViewController: BaseRegistrationViewController {
             make.leading.equalToSuperview().offset(16)
             make.trailing.equalToSuperview().inset(16)
             make.height.equalTo(56)
-            make.centerY.equalToSuperview().inset(50)
+//            make.centerY.equalToSuperview().inset(50)
         }
         registrationButton.snp.makeConstraints { make in
             make.top.equalTo(authorizationButton.snp.bottom).offset(16)
             make.leading.equalToSuperview().offset(16)
             make.trailing.equalToSuperview().inset(16)
             make.height.equalTo(56)
+            make.bottom.equalToSuperview().offset(-70)
         }
     }
     
     @objc
     private func registrationTapped() {
-        let registrationVC = DIService.shared.getVc(PhoneRegistrationViewController.self)
+        let registrationVC = InjectionService.resolve(controller: PhoneRegistrationViewController.self)
         navigationController?.pushViewController(registrationVC, animated: true)
     }
     
     @objc
     private func authorizationTapped() {
-        let authVC = DIService.shared.getVc(AuthViewController.self)
+        let authVC = InjectionService.resolve(controller: AuthViewController.self)
         navigationController?.pushViewController(authVC, animated: true)
     }
 }

@@ -51,7 +51,7 @@ class RegistrationButton: UIButton {
     private var isInvertButton = false {
         didSet {
             if isInvertButton {
-                self.titleLabel?.textColor = Asset.clientGray.color
+                self.titleLabel?.textColor = Asset.clientMain.color
                 self.backgroundColor = Asset.clientBackround.color
             } else {
                 self.titleLabel?.textColor = .white

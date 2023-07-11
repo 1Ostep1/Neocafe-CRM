@@ -13,12 +13,10 @@ class BaseRegistrationViewController: UIViewController {
 
     private let registrationIcon: UIImageView = {
         let view = UIImageView()
-        view.image = Asset.registrationIcon.image
+        view.image = Asset.igNeocafe.image
         view.contentMode = .scaleAspectFill
         return view
     }()
-    
-    var container = Container()
     
     override func viewDidLoad() {
         super.viewDidLoad()

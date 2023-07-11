@@ -8,7 +8,6 @@
 import UIKit
 
 class RegistrationTextField: UITextField {
-
     private lazy var mistakeLabel: UILabel = {
         let label = UILabel()
         label.isHidden = true
@@ -76,6 +75,12 @@ extension RegistrationTextField {
         mistakeLabel.isHidden = false
         mistakeLabel.text = label
         mistakeLabel.textColor = textColor
+        shakeField()
+    }
+    
+    public func hideMistakeLabel() {
+        mistakeLabel.isHidden = true
+        mistakeLabel.text = ""
     }
     
     public func setPlaceholder(with text: String, color: UIColor) {
@@ -84,7 +89,7 @@ extension RegistrationTextField {
     
     public func shakeField() {
         let animation = CAKeyframeAnimation(keyPath: "transform.translation.x")
-        animation.timingFunction = CAMediaTimingFunction(name: CAMediaTimingFunctionName.linear)
+        animation.timingFunction = CAMediaTimingFunction(name: CAMediaTimingFunctionName.easeIn)
         animation.duration = 0.6
         animation.values = [-20.0, 20.0, -20.0, 20.0, -10.0, 10.0, -5.0, 5.0, 0.0 ]
         layer.add(animation, forKey: "shake")

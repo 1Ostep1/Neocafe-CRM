@@ -25,7 +25,6 @@ class ConfirmationCodeViewController: BaseRegistrationViewController {
         field.textAlignment = .center
         field.keyboardType = .numberPad
         field.textContentType = .oneTimeCode
-        field.backgroundColor = .clear
         return field
     }()
     
@@ -36,7 +35,6 @@ class ConfirmationCodeViewController: BaseRegistrationViewController {
         field.textAlignment = .center
         field.keyboardType = .numberPad
         field.textContentType = .oneTimeCode
-        field.backgroundColor = .clear
         return field
     }()
     
@@ -47,7 +45,6 @@ class ConfirmationCodeViewController: BaseRegistrationViewController {
         field.textAlignment = .center
         field.keyboardType = .numberPad
         field.textContentType = .oneTimeCode
-        field.backgroundColor = .clear
         return field
     }()
     
@@ -58,7 +55,6 @@ class ConfirmationCodeViewController: BaseRegistrationViewController {
         field.textAlignment = .center
         field.keyboardType = .numberPad
         field.textContentType = .oneTimeCode
-        field.backgroundColor = .clear
         return field
     }()
     
@@ -84,14 +80,31 @@ class ConfirmationCodeViewController: BaseRegistrationViewController {
     
     private lazy var resendButton: UIButton = {
         let button = UIButton()
-        button.setTitleColor(.gray, for: .normal)
+        button.setTitleColor(Asset.clientGray2.color, for: .normal)
         button.setTitle("Отправить ещё раз", for: .normal)
         button.isEnabled = false
-        button.addTarget(self, action: #selector(getCodeTapped(_:)), for: .touchUpInside)
+        button.addTarget(self, action: #selector(resendOTP), for: .touchUpInside)
         return button
     }()
     
+    private lazy var activity: UIActivityIndicatorView = {
+        let view = UIActivityIndicatorView()
+        view.hidesWhenStopped = true
+        return view
+    }()
+    
+    private var isLoading: Bool = false {
+        didSet {
+            _ = isLoading ? activity.startAnimating() : activity.stopAnimating()
+        }
+    }
     private var confirmationCode = ""
+    private var counter = 60 {
+        didSet {
+            resendButton.isEnabled = counter == 0 ? true : false
+            resendButton.alpha = counter == 0 ? 1 : 0.5
+        }
+    }
     var phoneNumber = ""
     
     // MARK: - Injection
@@ -123,6 +136,7 @@ class ConfirmationCodeViewController: BaseRegistrationViewController {
     }
     
     private func configure() {
+        Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateCounter), userInfo: nil, repeats: true)
         configureTextField()
         setUp()
     }
@@ -132,12 +146,13 @@ class ConfirmationCodeViewController: BaseRegistrationViewController {
         view.addSubview(horizontalStack)
         view.addSubview(logInButton)
         view.addSubview(resendButton)
+        resendButton.addSubview(activity)
     }
     
     private func setUpConstaints () {
         textLabel.snp.makeConstraints { make in
-            make.leading.equalToSuperview().offset(30)
-            make.trailing.equalToSuperview().inset(30)
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().inset(16)
             make.centerY.equalToSuperview().inset(40)
         }
         horizontalStack.snp.makeConstraints { make in
@@ -158,9 +173,15 @@ class ConfirmationCodeViewController: BaseRegistrationViewController {
             make.top.equalTo(logInButton.snp.bottom).offset(16)
             make.height.equalTo(60)
         }
+        activity.snp.makeConstraints { make in
+            make.width.height.equalTo(40)
+            make.center.equalToSuperview()
+        }
     }
     
     private func configureTextField() {
+        textLabel.text = "Введите 4-х значный код, \nотправленный на номер \(phoneNumber)"
+        
         textField1.delegate = self
         textField2.delegate = self
         textField3.delegate = self
@@ -180,6 +201,7 @@ class ConfirmationCodeViewController: BaseRegistrationViewController {
     private func checkCode() {
         if phoneNumber.count > 8,
            confirmationCode.count > 3 {
+            isLoading = true
             let confirmationCodeCompletion = { [unowned self] completion in
                 self.viewModel.confirmAuthCode(for: self.phoneNumber, confirmationCode: self.confirmationCode, completion: completion)
             }
@@ -187,12 +209,36 @@ class ConfirmationCodeViewController: BaseRegistrationViewController {
             defer { logInButton.isLoading = false }
             
             withRetry(confirmationCodeCompletion) { [weak self] response in
+                self?.isLoading = false
                 if case .success = response {
                     let tabBarVC = BaseTabViewController()
                     tabBarVC.modalPresentationStyle = .fullScreen
                     self?.present(tabBarVC, animated: true)
                 } 
             }
+        }
+    }
+    
+    @objc
+    private func resendOTP() {
+        resendOTPRequest()
+        counter = 60
+    }
+    
+    @objc
+    private func updateCounter() {
+        if counter > 0 {
+            resendButton.setTitle("Отправить ещё раз(\(counter))", for: .normal)
+            counter -= 1
+        } else {
+            resendButton.setTitle("Отправить ещё раз", for: .normal)
+        }
+    }
+    
+    private func resendOTPRequest() {
+        isLoading = true
+        viewModel.authorizeUser(user: .init(phoneNumber: phoneNumber)) { [weak self] _ in
+            self?.isLoading = false
         }
     }
 }
@@ -208,7 +254,9 @@ extension ConfirmationCodeViewController: UITextFieldDelegate {
                 textField3.becomeFirstResponder()
             } else if (textField == textField3) {
                 textField4.becomeFirstResponder()
-            } else if (textField == textField4) {}
+            } else if (textField == textField4) {
+                checkCode()
+            }
             
             textField.text = string
             confirmationCode += string

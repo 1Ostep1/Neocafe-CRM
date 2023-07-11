@@ -8,12 +8,11 @@
 import Foundation
 
 struct BranchDTO: Codable {
+    
+    let branchId: Int
+    let name: String
     let address: String
-    let id: Int
+    let phoneNumber: String
     let link2gis: String?
-    let name: String?
-    let phoneNumber: String?
-    let status: String?
-    var latitude: Double?
-    var longitude: Double?
+    let workingTime: String
 }

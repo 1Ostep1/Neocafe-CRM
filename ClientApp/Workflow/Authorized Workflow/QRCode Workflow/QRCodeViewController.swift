@@ -61,12 +61,10 @@ class QRCodeViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setUp()
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        scanQRCode()
-        createScanningIndicator()
+        DispatchQueue.main.async {
+            self.scanQRCode()
+            self.createScanningIndicator()
+        }
     }
     
     private func setUp() {
@@ -127,7 +125,9 @@ class QRCodeViewController: BaseViewController {
         video.videoGravity = .resizeAspectFill
         QRCodeScanner.layer.addSublayer(video)
         video.frame = QRCodeScanner.layer.bounds
-        session.startRunning()
+        DispatchQueue.global(qos: .background).async {
+            self.session.startRunning()
+        }
     }
     
     func createScanningIndicator() {
@@ -164,7 +164,6 @@ class QRCodeViewController: BaseViewController {
 }
 
 // MARK: - QRCode reader
-
 extension QRCodeViewController: AVCaptureMetadataOutputObjectsDelegate {
     func metadataOutput(_ captureOutput: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
         if metadataObjects.count != 0 {
@@ -172,9 +171,9 @@ extension QRCodeViewController: AVCaptureMetadataOutputObjectsDelegate {
                 if object.type == AVMetadataObject.ObjectType.qr,
                    let nameText = object.stringValue {
                     let alert = UIAlertController(title: "Заказ успешно оформлен на стол: ", message: "\(nameText)", preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "Назад", style: .default, handler: { [weak self] _ in
+                    alert.addAction(UIAlertAction(title: "Назад", style: .default) { [weak self] _ in
                         self?.dismiss(animated: true)
-                    }))
+                    })
                     present(alert, animated: true, completion: nil)
                 }
             }

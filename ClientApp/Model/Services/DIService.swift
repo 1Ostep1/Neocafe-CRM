@@ -7,26 +7,11 @@
 
 import Swinject
 import SwinjectAutoregistration
+import SwinjectStoryboard
 import UIKit
 
-class DIService: NSObject {
-    
-    static var shared = DIService()
-    
-    var DIArray: [Assembly] = [
-        ServiceAssembly(),
-        SplashAssembly(),
-        RegistrationAssembly(),
-        AuthorizationAssembly(),
-        HomePageAssembly(),
-        BasketAssembly(),
-        ProfileAssembly(),
-        BranchAssembly()
-    ]
-    
-    func getVc<T: UIViewController>(_ vc: T.Type) -> T {
-        let container = Container()
-        let assembler = Assembler(DIArray, container: container)
-        return assembler.resolver.resolve(T.self)!
+struct InjectionService {
+    static func resolve<T: UIViewController>(controller type: T.Type) -> T {
+        SwinjectStoryboard.defaultContainer.resolve(type)!
     }
 }

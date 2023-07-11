@@ -13,13 +13,13 @@ enum TextFieldImageSide {
 }
 
 extension UITextField {
-    
     func setUpImage(imageName: String, on side: TextFieldImageSide) {
         let imageView = UIImageView(frame: CGRect(x: 10, y: 5, width: 20, height: 20))
         if let imageWithSystemName = UIImage(systemName: imageName) {
             imageView.tintColor = .gray
             imageView.image = imageWithSystemName
         } else {
+            imageView.tintColor = .black
             imageView.image = UIImage(named: imageName)
         }
         
@@ -37,9 +37,8 @@ extension UITextField {
     }
     
     func setBottomBorder() {
-        
         self.borderStyle = .none
-        self.layer.backgroundColor = UIColor.white.cgColor
+        self.layer.backgroundColor = Asset.clientBackround.color.cgColor
         
         self.layer.masksToBounds = false
         self.layer.shadowColor = UIColor.black.cgColor

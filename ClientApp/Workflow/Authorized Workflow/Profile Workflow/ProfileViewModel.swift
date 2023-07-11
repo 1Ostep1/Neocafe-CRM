@@ -14,8 +14,6 @@ protocol ProfileViewModelType {
     
     // MARK: - Bonuses
     func getBonuses(completion: @escaping(Result<Int, Error>) -> Void)
-    func addSubstractBonuses(amount: Int, completion: @escaping (Result<Int, Error>) -> Void)
-    
     // MARK: - Get orders history
     func getCurrentOrders(completion: @escaping (Result<[HistoryDTO], Error>) -> Void)
     func getCompletedOrders(completion: @escaping (Result<[HistoryDTO], Error>) -> Void)
@@ -46,10 +44,6 @@ class ProfileViewModel: ProfileViewModelType {
     
     func getBonuses(completion: @escaping(Result<Int, Error>) -> Void) {
         webApi.getBonuses(completion: completion)
-    }
-    
-    func addSubstractBonuses(amount: Int, completion: @escaping (Result<Int, Error>) -> Void) {
-        webApi.addSubstractBonuses(amount: amount, completion: completion)
     }
     
     func getCurrentOrders(completion: @escaping (Result<[HistoryDTO], Error>) -> Void) {

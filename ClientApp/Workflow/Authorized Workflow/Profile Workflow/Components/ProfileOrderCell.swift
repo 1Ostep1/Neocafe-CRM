@@ -36,6 +36,7 @@ class ProfileOrderCell: UICollectionViewCell {
         let label = UILabel()
         label.text = "14 августа"
         label.textColor = .darkGray
+        label.textAlignment = .right
         label.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         return label
     }()
@@ -86,13 +87,9 @@ class ProfileOrderCell: UICollectionViewCell {
     }
     
     func display(_ item: HistoryDTO) {
-        var product = ""
-        item.listOrderDetailsDto.forEach { dish in
-            product += dish.name
-        }
         branchLabel.text = item.branchName
-        productsLabel.text = product
-        dateLabel.text = item.orderTime
+        productsLabel.text = item.listOrderDetailsDto.map({ $0.name }).joined(separator: ", ")
+        dateLabel.text = item.orderTime//.toDate().toString(dateFormat: "MMM d, yyyy")
     }
 }
 

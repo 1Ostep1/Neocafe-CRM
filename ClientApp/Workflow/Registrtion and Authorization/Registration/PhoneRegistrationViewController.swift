@@ -35,6 +35,7 @@ class PhoneRegistrationViewController: BaseRegistrationViewController {
         field.setBorderColor(with: .clear)
         field.setBackgroundColor(with: Asset.clientGray.color)
         field.setKeyboardType(with: .numberPad)
+        field.delegate = self
         field.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
         return field
     }()
@@ -46,10 +47,20 @@ class PhoneRegistrationViewController: BaseRegistrationViewController {
         return button
     }()
     
+    private lazy var activity: UIActivityIndicatorView = {
+        let view = UIActivityIndicatorView()
+        view.hidesWhenStopped = true
+        return view
+    }()
+    
+    private var isLoading: Bool = false {
+        didSet {
+            _ = isLoading ? activity.startAnimating() : activity.stopAnimating()
+        }
+    }
+    
     // MARK: - Injection
     public var viewModel: PhoneRegistrationViewModelType
-    
-    var isLoading = false
     private var searchTerm: String?
     private var countryCode = "+996"
     
@@ -78,6 +89,7 @@ class PhoneRegistrationViewController: BaseRegistrationViewController {
         view.addSubview(nameTextField)
         view.addSubview(phoneTextField)
         view.addSubview(getCodeButton)
+        getCodeButton.addSubview(activity)
     }
     
     private func setUpConstaints () {
@@ -105,6 +117,10 @@ class PhoneRegistrationViewController: BaseRegistrationViewController {
             make.trailing.equalToSuperview().inset(16)
             make.height.equalTo(56)
         }
+        activity.snp.makeConstraints { make in
+            make.width.height.equalTo(40)
+            make.center.equalToSuperview()
+        }
     }
     
     @objc
@@ -125,16 +141,17 @@ class PhoneRegistrationViewController: BaseRegistrationViewController {
               name.count > 2 else { return }
         phoneTextField.resignFirstResponder()
         getCodeButton.isLoading = true
-        defer { getCodeButton.isLoading = false }
         let fullPhone = countryCode + phone
         let userInfo = RegistrationDTO(firstName: name, phoneNumber: fullPhone)
         let requestCode = { [unowned self] completion in
             self.viewModel.registerNewUser(user: userInfo, completion: completion)
         }
         
-        withRetry(requestCode) { (res) in
+        withRetry(requestCode) { [weak self] (res) in
+            guard let `self` = self else { return }
+            self.getCodeButton.isLoading = false
             if case .success = res {
-                let confirmationCodeVC = DIService.shared.getVc(PhoneConfirmationViewController.self)
+                let confirmationCodeVC = InjectionService.resolve(controller: PhoneConfirmationViewController.self)
                 confirmationCodeVC.phoneNumber = phone
                 self.navigationController?.pushViewController(confirmationCodeVC, animated: true)
             }
@@ -142,3 +159,27 @@ class PhoneRegistrationViewController: BaseRegistrationViewController {
     }
 }
 
+extension PhoneRegistrationViewController: UITextFieldDelegate {
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        requestCode()
+        return true
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        if textField.text?.isEmpty ?? true {
+            textField.text = "+996 "
+        }
+    }
+    
+    func textFieldDidChangeSelection(_ textField: UITextField) {
+        guard var text = textField.text else { return }
+        getCodeButton.isEnabled = text.count > 0
+        if text.count > 14 {
+            text.removeLast()
+            textField.text = text
+            phoneTextField.setMistakeLabel(to: "Invalid phone number length")
+        } else {
+            phoneTextField.hideMistakeLabel()
+        }
+    }
+}
